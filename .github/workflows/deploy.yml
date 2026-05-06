@@ -44,7 +44,7 @@ jobs:
           pnpm build
 
       - name: Upload to OSS (Menci/upload-to-oss · 业界标准 · 增量 · 删孤儿)
-        uses: Menci/upload-to-oss@v3
+        uses: Menci/upload-to-oss@beta-v3
         with:
           access-key-id: ${{ secrets.OSS_ACCESS_KEY_ID }}
           access-key-secret: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
