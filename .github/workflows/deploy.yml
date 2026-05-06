@@ -52,24 +52,44 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm build
 
-      - name: Install ossutil v2
-        run: |
-          curl -fsSLo ossutil.zip https://gosspublic.alicdn.com/ossutil/v2/2.1.4/ossutil-v2.1.4-linux-amd64.zip
-          unzip -q ossutil.zip
-          sudo mv ossutil-v2.1.4-linux-amd64/ossutil /usr/local/bin/
-          ossutil version
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with: { python-version: "3.13" }
 
-      - name: Deploy 到 OSS bucket agentaily-mail-intro
+      - name: Install oss2 SDK
+        run: pip install -q oss2
+
+      - name: Deploy to OSS bucket agentaily-mail-intro via oss2
         env:
           OSS_AK: ${{ secrets.OSS_ACCESS_KEY_ID }}
           OSS_SK: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
         run: |
-          ossutil cp __template/dist/ oss://agentaily-mail-intro/ -r -f \
-            -e oss-cn-hangzhou.aliyuncs.com -i "$OSS_AK" -k "$OSS_SK" \
-            --cache-control "public, max-age=300, must-revalidate"
-          ossutil sync __template/dist/ oss://agentaily-mail-intro/ \
-            -e oss-cn-hangzhou.aliyuncs.com -i "$OSS_AK" -k "$OSS_SK" \
-            --delete --update
+          python3 <<'EOF'
+          import os, oss2
+          from pathlib import Path
+          auth = oss2.Auth(os.environ["OSS_AK"], os.environ["OSS_SK"])
+          bucket = oss2.Bucket(auth, "https://oss-cn-hangzhou.aliyuncs.com", "agentaily-mail-intro")
+          dist = Path("__template/dist")
+          # upload all
+          uploaded = []
+          for f in dist.rglob("*"):
+              if not f.is_file(): continue
+              key = str(f.relative_to(dist))
+              ct = "text/html; charset=utf-8" if f.suffix==".html" else None
+              headers = {"Cache-Control": "public, max-age=300, must-revalidate"}
+              if ct: headers["Content-Type"] = ct
+              bucket.put_object_from_file(key, str(f), headers=headers)
+              uploaded.append(key)
+              print(f"  ↑ {key}")
+          # delete stale (in OSS but not in dist)
+          local_keys = set(uploaded)
+          for obj in oss2.ObjectIterator(bucket):
+              if obj.key not in local_keys and not obj.key.endswith("/"):
+                  bucket.delete_object(obj.key)
+                  print(f"  ✗ {obj.key} (stale)")
+          print(f"
+✓ uploaded {len(uploaded)} · deleted stale")
+          EOF
 
       - name: Verify
         run: |
