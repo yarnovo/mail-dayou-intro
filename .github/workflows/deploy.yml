@@ -52,11 +52,12 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm build
 
-      - name: Install ossutil
+      - name: Install ossutil v2
         run: |
-          curl -fsSLo ossutil.zip https://gosspublic.alicdn.com/ossutil/v2/2.1.4/ossutil-2.1.4-linux-amd64.zip
+          curl -fsSLo ossutil.zip https://gosspublic.alicdn.com/ossutil/v2/2.1.4/ossutil-v2.1.4-linux-amd64.zip
           unzip -q ossutil.zip
-          sudo mv ossutil-2.1.4-linux-amd64/ossutil /usr/local/bin/
+          sudo mv ossutil-v2.1.4-linux-amd64/ossutil /usr/local/bin/
+          ossutil version
 
       - name: Deploy 到 OSS bucket agentaily-mail-intro
         env:
@@ -64,14 +65,10 @@ jobs:
           OSS_SK: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
         run: |
           ossutil cp __template/dist/ oss://agentaily-mail-intro/ -r -f \
-            --endpoint oss-cn-hangzhou.aliyuncs.com \
-            --access-key-id "$OSS_AK" \
-            --access-key-secret "$OSS_SK" \
+            -e oss-cn-hangzhou.aliyuncs.com -i "$OSS_AK" -k "$OSS_SK" \
             --cache-control "public, max-age=300, must-revalidate"
           ossutil sync __template/dist/ oss://agentaily-mail-intro/ \
-            --endpoint oss-cn-hangzhou.aliyuncs.com \
-            --access-key-id "$OSS_AK" \
-            --access-key-secret "$OSS_SK" \
+            -e oss-cn-hangzhou.aliyuncs.com -i "$OSS_AK" -k "$OSS_SK" \
             --delete --update
 
       - name: Verify
