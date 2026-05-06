@@ -48,10 +48,11 @@ jobs:
         with:
           access-key-id: ${{ secrets.OSS_ACCESS_KEY_ID }}
           access-key-secret: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
-          region: oss-cn-hangzhou
+          endpoint: oss-cn-hangzhou.aliyuncs.com
           bucket: agentaily-mail-intro
           local-path: __template/dist
-          delete-removed: true
+          remote-path: /
+          no-delete-remote-files: false
 
       - name: Verify
         run: curl -sSL "https://m.mail.agentaily.com/?cb=$RANDOM" -o /dev/null -w "✓ m.mail.agentaily.com HTTP %{http_code}\n"
