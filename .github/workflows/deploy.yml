@@ -1,0 +1,79 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+    paths:
+      - "intro.config.json"
+      - "intro/**"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 本仓 (config + audio + transcript)
+        uses: actions/checkout@v4
+
+      - name: Download akong-intro-astro template (public)
+        run: |
+          mkdir -p __template
+          curl -sSL "https://codeload.github.com/yarnovo/akong-intro-astro/tar.gz/main" -o template.tar.gz
+          ls -la template.tar.gz
+          file template.tar.gz
+          tar xzf template.tar.gz --strip-components=1 -C __template
+          ls __template
+
+      - name: Download akong-avatars (public · 拿头像 svg)
+        run: |
+          curl -sSL "https://codeload.github.com/yarnovo/akong-avatars/tar.gz/main" -o avatars.tar.gz
+          mkdir -p __avatars
+          tar xzf avatars.tar.gz --strip-components=1 -C __avatars
+
+      - name: Inject 本仓资源到 template public/
+        run: |
+          mkdir -p __template/public
+          cp intro.config.json         __template/public/intro.config.json
+          cp intro/audio/intro-zh.mp3  __template/public/intro-zh.mp3
+          cp intro/text/intro-zh.md    __template/public/transcript.md
+          cp __avatars/avatars/dayou.svg __template/public/avatar.svg
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with: { version: 10 }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with: { node-version: 22 }
+
+      - name: pnpm install + astro build
+        working-directory: __template
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm build
+
+      - name: Install ossutil
+        run: |
+          curl -o ossutil.zip https://gosspublic.alicdn.com/ossutil/v2/2.1.4/ossutil-2.1.4-linux-amd64.zip
+          unzip -q ossutil.zip
+          sudo mv ossutil-2.1.4-linux-amd64/ossutil /usr/local/bin/
+
+      - name: Deploy 到 OSS bucket agentaily-mail-intro
+        env:
+          OSS_AK: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_SK: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+        run: |
+          ossutil cp __template/dist/ oss://agentaily-mail-intro/ -r -f \
+            --endpoint oss-cn-hangzhou.aliyuncs.com \
+            --access-key-id "$OSS_AK" \
+            --access-key-secret "$OSS_SK" \
+            --cache-control "public, max-age=300, must-revalidate"
+          ossutil sync __template/dist/ oss://agentaily-mail-intro/ \
+            --endpoint oss-cn-hangzhou.aliyuncs.com \
+            --access-key-id "$OSS_AK" \
+            --access-key-secret "$OSS_SK" \
+            --delete --update
+
+      - name: Verify
+        run: |
+          curl -sSL "https://m.mail.agentaily.com/?cb=$RANDOM" -o /dev/null -w "✓ m.mail.agentaily.com HTTP %{http_code}\n"
