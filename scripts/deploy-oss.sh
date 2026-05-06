@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# render 共享 intro 设计 + 上传 dist/index.html + mp3 到 m.xiaohua OSS bucket
+# render 共享 intro 设计 + 上传 dist/index.html + mp3 到 m.mail OSS bucket
 # 第一次跑前必跑 setup.sh (建 bucket + 关 BPA + 绑 cname + 证书)
 
 set -euo pipefail
@@ -7,8 +7,8 @@ cd "$(dirname "$0")/.."
 
 ENV="${1:-prod}"
 case "$ENV" in
-  prod)    BUCKET="${BUCKET:-agentaily-mail-dayou-m}" ;;
-  staging) BUCKET="${BUCKET:-agentaily-mail-dayou-m-staging}" ;;
+  prod)    BUCKET="${BUCKET:-agentaily-mail-intro}" ;;
+  staging) BUCKET="${BUCKET:-agentaily-mail-intro-staging}" ;;
   *) echo "用法: $0 [prod|staging]"; exit 1 ;;
 esac
 PROFILE="${PROFILE:-hongniang-main}"
