@@ -2,13 +2,14 @@
   "$schema": "https://vault-cli.local/schemas/v3/vault-manifest.schema.json",
   "project": "mail-dayou-intro",
   "credentials": {
-    "dashscope-main": {
-      "slug": "dashscope-main",
-      "fields": ["api_key"],
+    "minimax-main": {
+      "slug": "minimax-main",
+      "fields": ["api_key", "group_id"],
       "env": {
-        "api_key": "DASHSCOPE_API_KEY"
+        "api_key": "MINIMAX_API_KEY",
+        "group_id": "MINIMAX_GROUP_ID"
       },
-      "purpose": "CosyVoice TTS · xiaohua intro 文字 → mp3 · 复用 dashscope-main 同 quota"
+      "purpose": "MiniMax Speech-02-HD TTS · dayou intro 文字 → mp3 · 替 CosyVoice (老板 5-6 拍 · 中文多音字更准)"
     }
   }
 }
