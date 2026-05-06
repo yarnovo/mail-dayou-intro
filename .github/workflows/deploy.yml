@@ -24,11 +24,11 @@ jobs:
           tar xzf template.tar.gz --strip-components=1 -C __template
           ls __template
 
-      - name: Download akong-avatars (public · 拿头像 svg)
+      - name: Download avatar svg (raw URL · 单文件)
         run: |
-          curl -sSL "https://codeload.github.com/yarnovo/akong-avatars/tar.gz/main" -o avatars.tar.gz
-          mkdir -p __avatars
-          tar xzf avatars.tar.gz --strip-components=1 -C __avatars
+          curl -sSL "https://raw.githubusercontent.com/yarnovo/akong-avatars/main/avatars/dayou.svg" -o avatar.svg
+          file avatar.svg
+          wc -c avatar.svg
 
       - name: Inject 本仓资源到 template public/
         run: |
@@ -36,7 +36,7 @@ jobs:
           cp intro.config.json         __template/public/intro.config.json
           cp intro/audio/intro-zh.mp3  __template/public/intro-zh.mp3
           cp intro/text/intro-zh.md    __template/public/transcript.md
-          cp __avatars/avatars/dayou.svg __template/public/avatar.svg
+          cp avatar.svg __template/public/avatar.svg
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
