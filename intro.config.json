@@ -1,0 +1,15 @@
+{
+  "name": "阿空大邮",
+  "name_short": "大邮",
+  "role": "邮箱管理大师",
+  "role_long": "你挂自己的邮箱 · 我帮你收信 · 起草 · 整理 · 不替你拍 · 不自动回",
+  "avatar": "dayou",
+  "accent": "#0f172a",
+  "mp3_url": "intro-zh.mp3",
+  "chat_url": "https://chat.dayou.mail.agentaily.com/",
+  "cta_label": "跟大邮聊聊 · 挂个邮箱试试 →",
+  "footer": "杭州阿空智能科技有限公司 · 浙ICP备2026022274号",
+  "qrcode_url": "",
+  "qrcode_label": "微信扫码加群 · 跟阿空大邮聊聊",
+  "qrcode_sub": "首批用户开放中 · 群人数 ≥ 200 自动开新群"
+}

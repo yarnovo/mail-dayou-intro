@@ -1,0 +1,15 @@
+[project]
+name = "mail-dayou-intro"
+version = "0.1.0"
+description = "阿空大邮 (xiaohua) intro · 文字 + CosyVoice TTS mp3 + 静态站 (m.mail.agentaily.com)"
+requires-python = ">=3.13"
+dependencies = [
+  "dashscope>=1.20.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/intro_builder"]

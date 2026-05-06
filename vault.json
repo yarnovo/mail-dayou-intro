@@ -1,0 +1,14 @@
+{
+  "$schema": "https://vault-cli.local/schemas/v3/vault-manifest.schema.json",
+  "project": "mail-dayou-intro",
+  "credentials": {
+    "dashscope-main": {
+      "slug": "dashscope-main",
+      "fields": ["api_key"],
+      "env": {
+        "api_key": "DASHSCOPE_API_KEY"
+      },
+      "purpose": "CosyVoice TTS · xiaohua intro 文字 → mp3 · 复用 dashscope-main 同 quota"
+    }
+  }
+}
