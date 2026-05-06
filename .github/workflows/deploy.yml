@@ -12,38 +12,29 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout 本仓 (config + audio + transcript)
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Download akong-intro-astro template (public)
+      - name: Download akong-intro-astro template
         run: |
+          curl -fsSLo template.tar.gz "https://codeload.github.com/yarnovo/akong-intro-astro/tar.gz/main"
           mkdir -p __template
-          curl -sSL "https://codeload.github.com/yarnovo/akong-intro-astro/tar.gz/main" -o template.tar.gz
-          ls -la template.tar.gz
-          file template.tar.gz
           tar xzf template.tar.gz --strip-components=1 -C __template
-          ls __template
 
-      - name: Download avatar svg (raw URL · 单文件)
+      - name: Download avatar svg
         run: |
-          curl -sSL "https://raw.githubusercontent.com/yarnovo/akong-avatars/main/avatars/dayou.svg" -o avatar.svg
-          file avatar.svg
-          wc -c avatar.svg
+          curl -fsSLo avatar.svg "https://raw.githubusercontent.com/yarnovo/akong-avatars/main/avatars/dayou.svg"
 
-      - name: Inject 本仓资源到 template public/
+      - name: Inject config + audio + transcript + avatar
         run: |
           mkdir -p __template/public
           cp intro.config.json         __template/public/intro.config.json
           cp intro/audio/intro-zh.mp3  __template/public/intro-zh.mp3
           cp intro/text/intro-zh.md    __template/public/transcript.md
-          cp avatar.svg __template/public/avatar.svg
+          cp avatar.svg                __template/public/avatar.svg
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
         with: { version: 10 }
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with: { node-version: 22 }
 
       - name: pnpm install + astro build
@@ -52,45 +43,15 @@ jobs:
           pnpm install --no-frozen-lockfile
           pnpm build
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with: { python-version: "3.13" }
-
-      - name: Install oss2 SDK
-        run: pip install -q oss2
-
-      - name: Deploy to OSS bucket agentaily-mail-intro via oss2
-        env:
-          OSS_AK: ${{ secrets.OSS_ACCESS_KEY_ID }}
-          OSS_SK: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
-        run: |
-          python3 <<'EOF'
-          import os, oss2
-          from pathlib import Path
-          auth = oss2.Auth(os.environ["OSS_AK"], os.environ["OSS_SK"])
-          bucket = oss2.Bucket(auth, "https://oss-cn-hangzhou.aliyuncs.com", "agentaily-mail-intro")
-          dist = Path("__template/dist")
-          # upload all
-          uploaded = []
-          for f in dist.rglob("*"):
-              if not f.is_file(): continue
-              key = str(f.relative_to(dist))
-              ct = "text/html; charset=utf-8" if f.suffix==".html" else None
-              headers = {"Cache-Control": "public, max-age=300, must-revalidate"}
-              if ct: headers["Content-Type"] = ct
-              bucket.put_object_from_file(key, str(f), headers=headers)
-              uploaded.append(key)
-              print(f"  ↑ {key}")
-          # delete stale (in OSS but not in dist)
-          local_keys = set(uploaded)
-          for obj in oss2.ObjectIterator(bucket):
-              if obj.key not in local_keys and not obj.key.endswith("/"):
-                  bucket.delete_object(obj.key)
-                  print(f"  ✗ {obj.key} (stale)")
-          print(f"
-✓ uploaded {len(uploaded)} · deleted stale")
-          EOF
+      - name: Upload to OSS (Menci/upload-to-oss · 业界标准 · 增量 · 删孤儿)
+        uses: Menci/upload-to-oss@v3
+        with:
+          access-key-id: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          access-key-secret: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+          region: oss-cn-hangzhou
+          bucket: agentaily-mail-intro
+          local-path: __template/dist
+          delete-removed: true
 
       - name: Verify
-        run: |
-          curl -sSL "https://m.mail.agentaily.com/?cb=$RANDOM" -o /dev/null -w "✓ m.mail.agentaily.com HTTP %{http_code}\n"
+        run: curl -sSL "https://m.mail.agentaily.com/?cb=$RANDOM" -o /dev/null -w "✓ m.mail.agentaily.com HTTP %{http_code}\n"
