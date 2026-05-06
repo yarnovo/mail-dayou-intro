@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# render 共享 intro 设计 + 上传 dist/index.html + mp3 到 m.mail OSS bucket
+# 用 akong-intro-astro 共享 template 渲染 + 上传 dist/ 到 m.mail OSS bucket
 # 第一次跑前必跑 setup.sh (建 bucket + 关 BPA + 绑 cname + 证书)
 
 set -euo pipefail
@@ -12,26 +12,37 @@ case "$ENV" in
   *) echo "用法: $0 [prod|staging]"; exit 1 ;;
 esac
 PROFILE="${PROFILE:-hongniang-main}"
-DESIGN="${HOME}/.claude/repos/akong-intro-design"
+ASTRO_DIR="${HOME}/.claude/repos/akong-intro-astro"
+SLUG="dayou"
 
-# 1. 渲染
+[ -d "$ASTRO_DIR" ] || { echo "❌ akong-intro-astro 不存在 · git clone yarnovo/akong-intro-astro 同级"; exit 1; }
+AVATAR="${HOME}/.claude/repos/akong-avatars/avatars/${SLUG}.svg"
+[ -f "$AVATAR" ] || { echo "❌ 头像 SVG 不存在: $AVATAR"; exit 1; }
+
+# 1. inject 本仓 config + 资源到 astro template public/
+echo "==> inject 本仓资源到 astro public/"
+mkdir -p "$ASTRO_DIR/public"
+cp intro.config.json         "$ASTRO_DIR/public/intro.config.json"
+cp intro/audio/intro-zh.mp3  "$ASTRO_DIR/public/intro-zh.mp3"
+cp intro/text/intro-zh.md    "$ASTRO_DIR/public/transcript.md"
+cp "$AVATAR"                 "$ASTRO_DIR/public/avatar.svg"
+
+# 2. astro build
+echo "==> astro build"
+( cd "$ASTRO_DIR" && pnpm install --silent && pnpm build )
+
+# 3. cp dist 回本仓
+rm -rf dist
 mkdir -p dist
-python3 "$DESIGN/render/render.py" \
-  --config intro.config.json \
-  --transcript intro/text/intro-zh.md \
-  --out dist/index.html
+cp -r "$ASTRO_DIR/dist/"* dist/
 
-# 2. 上传 index.html
-aliyun ossutil cp "dist/index.html" "oss://$BUCKET/index.html" \
+# 4. 上传整 dist (cp -r -f 强制 overwrite + sync 清孤儿)
+echo "==> upload dist/ → oss://$BUCKET/"
+aliyun ossutil cp dist/ "oss://$BUCKET/" -r -f \
   --cache-control "public, max-age=300, must-revalidate" \
-  --content-type "text/html; charset=utf-8" \
-  --profile "$PROFILE" -f
-
-# 3. 上传 mp3
-aliyun ossutil cp "intro/audio/intro-zh.mp3" "oss://$BUCKET/intro-zh.mp3" \
-  --cache-control "public, max-age=86400" \
-  --content-type "audio/mpeg" \
-  --profile "$PROFILE" -f
+  --profile "$PROFILE"
+aliyun ossutil sync dist/ "oss://$BUCKET/" \
+  --delete --update --profile "$PROFILE"
 
 case "$ENV" in
   prod)    echo "✓ deployed → https://m.mail.agentaily.com/" ;;
