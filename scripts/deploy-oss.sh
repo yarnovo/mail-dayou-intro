@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# 用 akong-intro-astro 共享 template 渲染 + 上传 dist/ 到 m.mail OSS bucket
+# 用 akong-intro-astro 共享 template 渲染 + 上传 dist/ 到 m.dayou.mail OSS bucket
 # 第一次跑前必跑 setup.sh (建 bucket + 关 BPA + 绑 cname + 证书)
+# 老板 5-7 拍域名规约: m.<role>.<team>.agentaily.com
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ENV="${1:-prod}"
 case "$ENV" in
-  prod)    BUCKET="${BUCKET:-agentaily-mail-intro}" ;;
-  staging) BUCKET="${BUCKET:-agentaily-mail-intro-staging}" ;;
+  prod)    BUCKET="${BUCKET:-agentaily-dayou-mail-m}" ;;
+  staging) BUCKET="${BUCKET:-agentaily-dayou-mail-m-staging}" ;;
   *) echo "用法: $0 [prod|staging]"; exit 1 ;;
 esac
-PROFILE="${PROFILE:-hongniang-main}"
-ASTRO_DIR="${HOME}/.claude/repos/akong-intro-astro"
+PROFILE="${PROFILE:-default}"
+ASTRO_DIR="${HOME}/.claude/repos/lib/akong-intro-astro"
 SLUG="dayou"
 
 [ -d "$ASTRO_DIR" ] || { echo "❌ akong-intro-astro 不存在 · git clone yarnovo/akong-intro-astro 同级"; exit 1; }
-AVATAR="${HOME}/.claude/repos/akong-avatars/avatars/${SLUG}.svg"
+AVATAR="${HOME}/.claude/repos/lib/akong-avatars/avatars/${SLUG}.svg"
 [ -f "$AVATAR" ] || { echo "❌ 头像 SVG 不存在: $AVATAR"; exit 1; }
 
 # 1. inject 本仓 config + 资源到 astro template public/
@@ -45,6 +46,6 @@ aliyun ossutil sync dist/ "oss://$BUCKET/" \
   --delete --update --profile "$PROFILE"
 
 case "$ENV" in
-  prod)    echo "✓ deployed → https://m.mail.agentaily.com/" ;;
-  staging) echo "✓ deployed → https://staging.m.mail.agentaily.com/" ;;
+  prod)    echo "✓ deployed → https://m.dayou.mail.agentaily.com/" ;;
+  staging) echo "✓ deployed → https://staging.m.dayou.mail.agentaily.com/" ;;
 esac
